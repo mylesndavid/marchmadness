@@ -1,0 +1,1220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NCAA Tournament Bracket</title>
+    <style>
+        :root {
+            --connector-color: #aaa;
+            --bracket-bg: #f8f8f8;
+            --winner-bg: #e6f7e6;
+            --loser-bg: #f7e6e6;
+            --winner-border: #28a745;
+            --loser-border: #dc3545;
+            --main-color: #0a4b78;
+        }
+        
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        
+        h1, h2 {
+            text-align: center;
+        }
+        
+        h1 {
+            color: var(--main-color);
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        h2 {
+            color: #666;
+            font-weight: normal;
+            margin-top: 0;
+            margin-bottom: 30px;
+        }
+        
+        .bracket-container {
+            display: flex;
+            justify-content: center;
+            overflow-x: auto;
+            padding-bottom: 30px;
+        }
+        
+        .bracket {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr) 1fr repeat(3, 1fr);
+            grid-template-rows: auto;
+            gap: 20px;
+            min-width: 1400px;
+            margin: 0 auto;
+            align-items: center;
+        }
+        
+        .region {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .east-region {
+            grid-column: 1;
+            grid-row: 1;
+        }
+        
+        .west-region {
+            grid-column: 1;
+            grid-row: 2;
+        }
+        
+        .south-region {
+            grid-column: 7;
+            grid-row: 1;
+        }
+        
+        .midwest-region {
+            grid-column: 7;
+            grid-row: 2;
+        }
+        
+        .east-rounds, .west-rounds, .south-rounds, .midwest-rounds {
+            display: flex;
+            height: 100%;
+        }
+        
+        .east-rounds {
+            grid-column: 2;
+            grid-row: 1;
+            flex-direction: row;
+        }
+        
+        .west-rounds {
+            grid-column: 2;
+            grid-row: 2;
+            flex-direction: row;
+        }
+        
+        .south-rounds {
+            grid-column: 6;
+            grid-row: 1;
+            flex-direction: row-reverse;
+        }
+        
+        .midwest-rounds {
+            grid-column: 6;
+            grid-row: 2;
+            flex-direction: row-reverse;
+        }
+        
+        .final-four {
+            grid-column: 3 / span 3;
+            grid-row: 1 / span 2;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .round {
+            display: flex;
+            flex-direction: column;
+            margin: 0 10px;
+            min-width: 250px;
+            justify-content: space-around;
+            height: 100%;
+        }
+        
+        .round-title {
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: var(--main-color);
+        }
+        
+        .region-title {
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: var(--main-color);
+            font-size: 1.2em;
+            padding: 10px;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+        }
+        
+        .matchup {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 15px;
+            position: relative;
+        }
+        
+        .team {
+            display: flex;
+            align-items: center;
+            padding: 8px 10px;
+            border: 1px solid #ddd;
+            border-left-width: 5px;
+            background-color: var(--bracket-bg);
+            margin-bottom: 1px;
+            transition: transform 0.2s ease;
+            position: relative;
+            min-width: 200px;
+        }
+        
+        .team:hover {
+            transform: translateX(5px);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            z-index: 10;
+        }
+        
+        .team.winner {
+            background-color: var(--winner-bg);
+            border-left-color: var(--winner-border);
+            font-weight: bold;
+        }
+        
+        .team.loser {
+            background-color: var(--loser-bg);
+            border-left-color: var(--loser-border);
+            color: #777;
+        }
+        
+        .team.champion-path {
+            background-color: #fff2cc;
+            border-left-color: #ffd700;
+        }
+        
+        .seed {
+            font-weight: bold;
+            margin-right: 8px;
+            min-width: 20px;
+            text-align: center;
+        }
+        
+        .team-name {
+            flex-grow: 1;
+        }
+        
+        .odds {
+            font-weight: bold;
+            margin-left: 10px;
+            color: #555;
+        }
+        
+        .connector {
+            position: absolute;
+            border-color: var(--connector-color);
+        }
+        
+        .connector-vertical {
+            border-right: 2px solid;
+            height: 50%;
+            right: -10px;
+        }
+        
+        .connector-horizontal {
+            border-top: 2px solid;
+            width: 10px;
+            right: -10px;
+        }
+        
+        .connector-top {
+            top: 50%;
+        }
+        
+        .connector-bottom {
+            top: 0;
+        }
+        
+        .champion-box {
+            border: 3px solid var(--winner-border);
+            padding: 15px;
+            text-align: center;
+            background-color: var(--winner-bg);
+            margin-top: 20px;
+            border-radius: 5px;
+            max-width: 300px;
+        }
+        
+        .champion-title {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            color: var(--main-color);
+        }
+        
+        .champion-name {
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+        
+        .final-four-matchups {
+            display: flex;
+            flex-direction: column;
+            gap: 50px;
+            margin-bottom: 50px;
+        }
+        
+        .championship-matchup {
+            margin-top: 50px;
+        }
+    </style>
+</head>
+<body>
+    <h1>NCAA Tournament Bracket Simulation</h1>
+    <h2>March Madness Bracket Visualization</h2>
+    
+    <div class="bracket-container">
+        <div class="bracket">
+
+            <div class="east-region">
+                <div class="region-title">East Region</div>
+                <div class="round">
+                    <div class="round-title">First Round</div>
+
+                    <div class="matchup">
+                        <div class="team winner " style="border-left-color: #0066cc">
+                            <div class="seed">1.0</div>
+                            <div class="team-name">Team 1.0</div>
+                            <div class="odds">0.987</div>
+                        </div>
+                        <div class="team loser " style="border-left-color: #666666">
+                            <div class="seed">16.0</div>
+                            <div class="team-name">Team 16.0</div>
+                            <div class="odds">0.013</div>
+                        </div>
+                    </div>
+
+                    <div class="matchup">
+                        <div class="team loser " style="border-left-color: #0099cc">
+                            <div class="seed">8.0</div>
+                            <div class="team-name">Team 8.0</div>
+                            <div class="odds">0.487</div>
+                        </div>
+                        <div class="team winner " style="border-left-color: #ff6600">
+                            <div class="seed">9.0</div>
+                            <div class="team-name">Team 9.0</div>
+                            <div class="odds">0.513</div>
+                        </div>
+                    </div>
+
+                    <div class="matchup">
+                        <div class="team winner " style="border-left-color: #ff9900">
+                            <div class="seed">5.0</div>
+                            <div class="team-name">Team 5.0</div>
+                            <div class="odds">0.651</div>
+                        </div>
+                        <div class="team loser " style="border-left-color: #669999">
+                            <div class="seed">12.0</div>
+                            <div class="team-name">Team 12.0</div>
+                            <div class="odds">0.349</div>
+                        </div>
+                    </div>
+
+                    <div class="matchup">
+                        <div class="team loser " style="border-left-color: #9900cc">
+                            <div class="seed">4.0</div>
+                            <div class="team-name">Team 4.0</div>
+                            <div class="odds">0.789</div>
+                        </div>
+                        <div class="team winner " style="border-left-color: #993366">
+                            <div class="seed">13.0</div>
+                            <div class="team-name">Team 13.0</div>
+                            <div class="odds">0.211</div>
+                        </div>
+                    </div>
+
+                    <div class="matchup">
+                        <div class="team loser " style="border-left-color: #669900">
+                            <div class="seed">6.0</div>
+                            <div class="team-name">Team 6.0</div>
+                            <div class="odds">0.618</div>
+                        </div>
+                        <div class="team winner " style="border-left-color: #cc9900">
+                            <div class="seed">11.0</div>
+                            <div class="team-name">Team 11.0</div>
+                            <div class="odds">0.382</div>
+                        </div>
+                    </div>
+
+                    <div class="matchup">
+                        <div class="team winner " style="border-left-color: #cc3300">
+                            <div class="seed">3.0</div>
+                            <div class="team-name">Team 3.0</div>
+                            <div class="odds">0.855</div>
+                        </div>
+                        <div class="team loser " style="border-left-color: #666699">
+                            <div class="seed">14.0</div>
+                            <div class="team-name">Team 14.0</div>
+                            <div class="odds">0.145</div>
+                        </div>
+                    </div>
+
+                    <div class="matchup">
+                        <div class="team winner " style="border-left-color: #cc6600">
+                            <div class="seed">7.0</div>
+                            <div class="team-name">Team 7.0</div>
+                            <div class="odds">0.612</div>
+                        </div>
+                        <div class="team loser " style="border-left-color: #996633">
+                            <div class="seed">10.0</div>
+                            <div class="team-name">Team 10.0</div>
+                            <div class="odds">0.388</div>
+                        </div>
+                    </div>
+
+                    <div class="matchup">
+                        <div class="team winner " style="border-left-color: #009933">
+                            <div class="seed">2.0</div>
+                            <div class="team-name">Team 2.0</div>
+                            <div class="odds">0.928</div>
+                        </div>
+                        <div class="team loser " style="border-left-color: #999966">
+                            <div class="seed">15.0</div>
+                            <div class="team-name">Team 15.0</div>
+                            <div class="odds">0.072</div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="east-rounds">
+
+                <div class="round">
+                    <div class="round-title">Second Round</div>
+
+                    <div class="matchup">
+                        <div class="team winner " style="border-left-color: #0066cc">
+                            <div class="seed">1.0</div>
+                            <div class="team-name">Team 1.0</div>
+                            <div class="odds">0.941</div>
+                        </div>
+                        <div class="team loser " style="border-left-color: #ff6600">
+                            <div class="seed">9.0</div>
+                            <div class="team-name">Team 9.0</div>
+                            <div class="odds">0.059</div>
+                        </div>
+                    </div>
+
+                    <div class="matchup">
+                        <div class="team winner " style="border-left-color: #ff9900">
+                            <div class="seed">5.0</div>
+                            <div class="team-name">Team 5.0</div>
+                            <div class="odds">0.897</div>
+                        </div>
+                        <div class="team loser " style="border-left-color: #993366">
+                            <div class="seed">13.0</div>
+                            <div class="team-name">Team 13.0</div>
+                            <div class="odds">0.103</div>
+                        </div>
+                    </div>
+
+                    <div class="matchup">
+                        <div class="team loser " style="border-left-color: #cc9900">
+                            <div class="seed">11.0</div>
+                            <div class="team-name">Team 11.0</div>
+                            <div class="odds">0.245</div>
+                        </div>
+                        <div class="team winner " style="border-left-color: #cc3300">
+                            <div class="seed">3.0</div>
+                            <div class="team-name">Team 3.0</div>
+                            <div class="odds">0.755</div>
+                        </div>
+                    </div>
+
+                    <div class="matchup">
+                        <div class="team winner " style="border-left-color: #cc6600">
+                            <div class="seed">7.0</div>
+                            <div class="team-name">Team 7.0</div>
+                            <div class="odds">0.234</div>
+                        </div>
+                        <div class="team loser " style="border-left-color: #009933">
+                            <div class="seed">2.0</div>
+                            <div class="team-name">Team 2.0</div>
+                            <div class="odds">0.766</div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="round">
+                    <div class="round-title">Sweet 16</div>
+
+                    <div class="matchup">
+                        <div class="team winner " style="border-left-color: #0066cc">
+                            <div class="seed">1.0</div>
+                            <div class="team-name">Team 1.0</div>
+                            <div class="odds">0.894</div>
+                        </div>
+                        <div class="team loser " style="border-left-color: #ff9900">
+                            <div class="seed">5.0</div>
+                            <div class="team-name">Team 5.0</div>
+                            <div class="odds">0.106</div>
+                        </div>
+                    </div>
+
+                    <div class="matchup">
+                        <div class="team winner " style="border-left-color: #cc3300">
+                            <div class="seed">3.0</div>
+                            <div class="team-name">Team 3.0</div>
+                            <div class="odds">0.796</div>
+                        </div>
+                        <div class="team loser " style="border-left-color: #cc6600">
+                            <div class="seed">7.0</div>
+                            <div class="team-name">Team 7.0</div>
+                            <div class="odds">0.204</div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="round">
+                    <div class="round-title">Elite 8</div>
+
+                    <div class="matchup">
+                        <div class="team winner " style="border-left-color: #0066cc">
+                            <div class="seed">1.0</div>
+                            <div class="team-name">Team 1.0</div>
+                            <div class="odds">0.779</div>
+                        </div>
+                        <div class="team loser " style="border-left-color: #cc3300">
+                            <div class="seed">3.0</div>
+                            <div class="team-name">Team 3.0</div>
+                            <div class="odds">0.221</div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="west-region">
+                <div class="region-title">West Region</div>
+                <div class="round">
+                    <div class="round-title">First Round</div>
+
+                    <div class="matchup">
+                        <div class="team winner " style="border-left-color: #0066cc">
+                            <div class="seed">1.0</div>
+                            <div class="team-name">Team 17.0</div>
+                            <div class="odds">0.987</div>
+                        </div>
+                        <div class="team loser " style="border-left-color: #666666">
+                            <div class="seed">16.0</div>
+                            <div class="team-name">Team 32.0</div>
+                            <div class="odds">0.013</div>
+                        </div>
+                    </div>
+
+                    <div class="matchup">
+                        <div class="team winner " style="border-left-color: #0099cc">
+                            <div class="seed">8.0</div>
+                            <div class="team-name">Team 24.0</div>
+                            <div class="odds">0.487</div>
+                        </div>
+                        <div class="team loser " style="border-left-color: #ff6600">
+                            <div class="seed">9.0</div>
+                            <div class="team-name">Team 25.0</div>
+                            <div class="odds">0.513</div>
+                        </div>
+                    </div>
+
+                    <div class="matchup">
+                        <div class="team winner " style="border-left-color: #ff9900">
+                            <div class="seed">5.0</div>
+                            <div class="team-name">Team 21.0</div>
+                            <div class="odds">0.651</div>
+                        </div>
+                        <div class="team loser " style="border-left-color: #669999">
+                            <div class="seed">12.0</div>
+                            <div class="team-name">Team 28.0</div>
+                            <div class="odds">0.349</div>
+                        </div>
+                    </div>
+
+                    <div class="matchup">
+                        <div class="team winner " style="border-left-color: #9900cc">
+                            <div class="seed">4.0</div>
+                            <div class="team-name">Team 20.0</div>
+                            <div class="odds">0.789</div>
+                        </div>
+                        <div class="team loser " style="border-left-color: #993366">
+                            <div class="seed">13.0</div>
+                            <div class="team-name">Team 29.0</div>
+                            <div class="odds">0.211</div>
+                        </div>
+                    </div>
+
+                    <div class="matchup">
+                        <div class="team winner " style="border-left-color: #669900">
+                            <div class="seed">6.0</div>
+                            <div class="team-name">Team 22.0</div>
+                            <div class="odds">0.618</div>
+                        </div>
+                        <div class="team loser " style="border-left-color: #cc9900">
+                            <div class="seed">11.0</div>
+                            <div class="team-name">Team 27.0</div>
+                            <div class="odds">0.382</div>
+                        </div>
+                    </div>
+
+                    <div class="matchup">
+                        <div class="team winner " style="border-left-color: #cc3300">
+                            <div class="seed">3.0</div>
+                            <div class="team-name">Team 19.0</div>
+                            <div class="odds">0.855</div>
+                        </div>
+                        <div class="team loser " style="border-left-color: #666699">
+                            <div class="seed">14.0</div>
+                            <div class="team-name">Team 30.0</div>
+                            <div class="odds">0.145</div>
+                        </div>
+                    </div>
+
+                    <div class="matchup">
+                        <div class="team winner " style="border-left-color: #cc6600">
+                            <div class="seed">7.0</div>
+                            <div class="team-name">Team 23.0</div>
+                            <div class="odds">0.612</div>
+                        </div>
+                        <div class="team loser " style="border-left-color: #996633">
+                            <div class="seed">10.0</div>
+                            <div class="team-name">Team 26.0</div>
+                            <div class="odds">0.388</div>
+                        </div>
+                    </div>
+
+                    <div class="matchup">
+                        <div class="team winner " style="border-left-color: #009933">
+                            <div class="seed">2.0</div>
+                            <div class="team-name">Team 18.0</div>
+                            <div class="odds">0.928</div>
+                        </div>
+                        <div class="team loser " style="border-left-color: #999966">
+                            <div class="seed">15.0</div>
+                            <div class="team-name">Team 31.0</div>
+                            <div class="odds">0.072</div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="west-rounds">
+
+                <div class="round">
+                    <div class="round-title">Second Round</div>
+
+                    <div class="matchup">
+                        <div class="team winner " style="border-left-color: #0066cc">
+                            <div class="seed">1.0</div>
+                            <div class="team-name">Team 17.0</div>
+                            <div class="odds">0.889</div>
+                        </div>
+                        <div class="team loser " style="border-left-color: #0099cc">
+                            <div class="seed">8.0</div>
+                            <div class="team-name">Team 24.0</div>
+                            <div class="odds">0.111</div>
+                        </div>
+                    </div>
+
+                    <div class="matchup">
+                        <div class="team winner " style="border-left-color: #ff9900">
+                            <div class="seed">5.0</div>
+                            <div class="team-name">Team 21.0</div>
+                            <div class="odds">0.419</div>
+                        </div>
+                        <div class="team loser " style="border-left-color: #9900cc">
+                            <div class="seed">4.0</div>
+                            <div class="team-name">Team 20.0</div>
+                            <div class="odds">0.581</div>
+                        </div>
+                    </div>
+
+                    <div class="matchup">
+                        <div class="team loser " style="border-left-color: #669900">
+                            <div class="seed">6.0</div>
+                            <div class="team-name">Team 22.0</div>
+                            <div class="odds">0.355</div>
+                        </div>
+                        <div class="team winner " style="border-left-color: #cc3300">
+                            <div class="seed">3.0</div>
+                            <div class="team-name">Team 19.0</div>
+                            <div class="odds">0.645</div>
+                        </div>
+                    </div>
+
+                    <div class="matchup">
+                        <div class="team loser " style="border-left-color: #cc6600">
+                            <div class="seed">7.0</div>
+                            <div class="team-name">Team 23.0</div>
+                            <div class="odds">0.234</div>
+                        </div>
+                        <div class="team winner " style="border-left-color: #009933">
+                            <div class="seed">2.0</div>
+                            <div class="team-name">Team 18.0</div>
+                            <div class="odds">0.766</div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="round">
+                    <div class="round-title">Sweet 16</div>
+
+                    <div class="matchup">
+                        <div class="team winner " style="border-left-color: #0066cc">
+                            <div class="seed">1.0</div>
+                            <div class="team-name">Team 17.0</div>
+                            <div class="odds">0.894</div>
+                        </div>
+                        <div class="team loser " style="border-left-color: #ff9900">
+                            <div class="seed">5.0</div>
+                            <div class="team-name">Team 21.0</div>
+                            <div class="odds">0.106</div>
+                        </div>
+                    </div>
+
+                    <div class="matchup">
+                        <div class="team loser " style="border-left-color: #cc3300">
+                            <div class="seed">3.0</div>
+                            <div class="team-name">Team 19.0</div>
+                            <div class="odds">0.364</div>
+                        </div>
+                        <div class="team winner " style="border-left-color: #009933">
+                            <div class="seed">2.0</div>
+                            <div class="team-name">Team 18.0</div>
+                            <div class="odds">0.636</div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="round">
+                    <div class="round-title">Elite 8</div>
+
+                    <div class="matchup">
+                        <div class="team loser " style="border-left-color: #0066cc">
+                            <div class="seed">1.0</div>
+                            <div class="team-name">Team 17.0</div>
+                            <div class="odds">0.652</div>
+                        </div>
+                        <div class="team winner " style="border-left-color: #009933">
+                            <div class="seed">2.0</div>
+                            <div class="team-name">Team 18.0</div>
+                            <div class="odds">0.348</div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="south-region">
+                <div class="region-title">South Region</div>
+                <div class="round">
+                    <div class="round-title">First Round</div>
+
+                    <div class="matchup">
+                        <div class="team winner " style="border-left-color: #0066cc">
+                            <div class="seed">1.0</div>
+                            <div class="team-name">Team 33.0</div>
+                            <div class="odds">0.987</div>
+                        </div>
+                        <div class="team loser " style="border-left-color: #666666">
+                            <div class="seed">16.0</div>
+                            <div class="team-name">Team 48.0</div>
+                            <div class="odds">0.013</div>
+                        </div>
+                    </div>
+
+                    <div class="matchup">
+                        <div class="team winner " style="border-left-color: #0099cc">
+                            <div class="seed">8.0</div>
+                            <div class="team-name">Team 40.0</div>
+                            <div class="odds">0.487</div>
+                        </div>
+                        <div class="team loser " style="border-left-color: #ff6600">
+                            <div class="seed">9.0</div>
+                            <div class="team-name">Team 41.0</div>
+                            <div class="odds">0.513</div>
+                        </div>
+                    </div>
+
+                    <div class="matchup">
+                        <div class="team loser " style="border-left-color: #ff9900">
+                            <div class="seed">5.0</div>
+                            <div class="team-name">Team 37.0</div>
+                            <div class="odds">0.651</div>
+                        </div>
+                        <div class="team winner " style="border-left-color: #669999">
+                            <div class="seed">12.0</div>
+                            <div class="team-name">Team 44.0</div>
+                            <div class="odds">0.349</div>
+                        </div>
+                    </div>
+
+                    <div class="matchup">
+                        <div class="team winner " style="border-left-color: #9900cc">
+                            <div class="seed">4.0</div>
+                            <div class="team-name">Team 36.0</div>
+                            <div class="odds">0.789</div>
+                        </div>
+                        <div class="team loser " style="border-left-color: #993366">
+                            <div class="seed">13.0</div>
+                            <div class="team-name">Team 45.0</div>
+                            <div class="odds">0.211</div>
+                        </div>
+                    </div>
+
+                    <div class="matchup">
+                        <div class="team loser " style="border-left-color: #669900">
+                            <div class="seed">6.0</div>
+                            <div class="team-name">Team 38.0</div>
+                            <div class="odds">0.618</div>
+                        </div>
+                        <div class="team winner " style="border-left-color: #cc9900">
+                            <div class="seed">11.0</div>
+                            <div class="team-name">Team 43.0</div>
+                            <div class="odds">0.382</div>
+                        </div>
+                    </div>
+
+                    <div class="matchup">
+                        <div class="team loser " style="border-left-color: #cc3300">
+                            <div class="seed">3.0</div>
+                            <div class="team-name">Team 35.0</div>
+                            <div class="odds">0.855</div>
+                        </div>
+                        <div class="team winner " style="border-left-color: #666699">
+                            <div class="seed">14.0</div>
+                            <div class="team-name">Team 46.0</div>
+                            <div class="odds">0.145</div>
+                        </div>
+                    </div>
+
+                    <div class="matchup">
+                        <div class="team winner " style="border-left-color: #cc6600">
+                            <div class="seed">7.0</div>
+                            <div class="team-name">Team 39.0</div>
+                            <div class="odds">0.612</div>
+                        </div>
+                        <div class="team loser " style="border-left-color: #996633">
+                            <div class="seed">10.0</div>
+                            <div class="team-name">Team 42.0</div>
+                            <div class="odds">0.388</div>
+                        </div>
+                    </div>
+
+                    <div class="matchup">
+                        <div class="team winner " style="border-left-color: #009933">
+                            <div class="seed">2.0</div>
+                            <div class="team-name">Team 34.0</div>
+                            <div class="odds">0.928</div>
+                        </div>
+                        <div class="team loser " style="border-left-color: #999966">
+                            <div class="seed">15.0</div>
+                            <div class="team-name">Team 47.0</div>
+                            <div class="odds">0.072</div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="south-rounds">
+
+                <div class="round">
+                    <div class="round-title">Second Round</div>
+
+                    <div class="matchup">
+                        <div class="team winner " style="border-left-color: #0066cc">
+                            <div class="seed">1.0</div>
+                            <div class="team-name">Team 33.0</div>
+                            <div class="odds">0.889</div>
+                        </div>
+                        <div class="team loser " style="border-left-color: #0099cc">
+                            <div class="seed">8.0</div>
+                            <div class="team-name">Team 40.0</div>
+                            <div class="odds">0.111</div>
+                        </div>
+                    </div>
+
+                    <div class="matchup">
+                        <div class="team loser " style="border-left-color: #669999">
+                            <div class="seed">12.0</div>
+                            <div class="team-name">Team 44.0</div>
+                            <div class="odds">0.234</div>
+                        </div>
+                        <div class="team winner " style="border-left-color: #9900cc">
+                            <div class="seed">4.0</div>
+                            <div class="team-name">Team 36.0</div>
+                            <div class="odds">0.766</div>
+                        </div>
+                    </div>
+
+                    <div class="matchup">
+                        <div class="team loser " style="border-left-color: #cc9900">
+                            <div class="seed">11.0</div>
+                            <div class="team-name">Team 43.0</div>
+                            <div class="odds">0.929</div>
+                        </div>
+                        <div class="team winner " style="border-left-color: #666699">
+                            <div class="seed">14.0</div>
+                            <div class="team-name">Team 46.0</div>
+                            <div class="odds">0.071</div>
+                        </div>
+                    </div>
+
+                    <div class="matchup">
+                        <div class="team loser " style="border-left-color: #cc6600">
+                            <div class="seed">7.0</div>
+                            <div class="team-name">Team 39.0</div>
+                            <div class="odds">0.234</div>
+                        </div>
+                        <div class="team winner " style="border-left-color: #009933">
+                            <div class="seed">2.0</div>
+                            <div class="team-name">Team 34.0</div>
+                            <div class="odds">0.766</div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="round">
+                    <div class="round-title">Sweet 16</div>
+
+                    <div class="matchup">
+                        <div class="team winner " style="border-left-color: #0066cc">
+                            <div class="seed">1.0</div>
+                            <div class="team-name">Team 33.0</div>
+                            <div class="odds">0.815</div>
+                        </div>
+                        <div class="team loser " style="border-left-color: #9900cc">
+                            <div class="seed">4.0</div>
+                            <div class="team-name">Team 36.0</div>
+                            <div class="odds">0.185</div>
+                        </div>
+                    </div>
+
+                    <div class="matchup">
+                        <div class="team loser " style="border-left-color: #666699">
+                            <div class="seed">14.0</div>
+                            <div class="team-name">Team 46.0</div>
+                            <div class="odds">0.013</div>
+                        </div>
+                        <div class="team winner " style="border-left-color: #009933">
+                            <div class="seed">2.0</div>
+                            <div class="team-name">Team 34.0</div>
+                            <div class="odds">0.987</div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="round">
+                    <div class="round-title">Elite 8</div>
+
+                    <div class="matchup">
+                        <div class="team loser " style="border-left-color: #0066cc">
+                            <div class="seed">1.0</div>
+                            <div class="team-name">Team 33.0</div>
+                            <div class="odds">0.652</div>
+                        </div>
+                        <div class="team winner " style="border-left-color: #009933">
+                            <div class="seed">2.0</div>
+                            <div class="team-name">Team 34.0</div>
+                            <div class="odds">0.348</div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="midwest-region">
+                <div class="region-title">Midwest Region</div>
+                <div class="round">
+                    <div class="round-title">First Round</div>
+
+                    <div class="matchup">
+                        <div class="team winner champion-path" style="border-left-color: #0066cc">
+                            <div class="seed">1.0</div>
+                            <div class="team-name">Team 49.0</div>
+                            <div class="odds">0.987</div>
+                        </div>
+                        <div class="team loser " style="border-left-color: #666666">
+                            <div class="seed">16.0</div>
+                            <div class="team-name">Team 64.0</div>
+                            <div class="odds">0.013</div>
+                        </div>
+                    </div>
+
+                    <div class="matchup">
+                        <div class="team loser " style="border-left-color: #0099cc">
+                            <div class="seed">8.0</div>
+                            <div class="team-name">Team 56.0</div>
+                            <div class="odds">0.487</div>
+                        </div>
+                        <div class="team winner " style="border-left-color: #ff6600">
+                            <div class="seed">9.0</div>
+                            <div class="team-name">Team 57.0</div>
+                            <div class="odds">0.513</div>
+                        </div>
+                    </div>
+
+                    <div class="matchup">
+                        <div class="team winner " style="border-left-color: #ff9900">
+                            <div class="seed">5.0</div>
+                            <div class="team-name">Team 53.0</div>
+                            <div class="odds">0.651</div>
+                        </div>
+                        <div class="team loser " style="border-left-color: #669999">
+                            <div class="seed">12.0</div>
+                            <div class="team-name">Team 60.0</div>
+                            <div class="odds">0.349</div>
+                        </div>
+                    </div>
+
+                    <div class="matchup">
+                        <div class="team winner " style="border-left-color: #9900cc">
+                            <div class="seed">4.0</div>
+                            <div class="team-name">Team 52.0</div>
+                            <div class="odds">0.789</div>
+                        </div>
+                        <div class="team loser " style="border-left-color: #993366">
+                            <div class="seed">13.0</div>
+                            <div class="team-name">Team 61.0</div>
+                            <div class="odds">0.211</div>
+                        </div>
+                    </div>
+
+                    <div class="matchup">
+                        <div class="team loser " style="border-left-color: #669900">
+                            <div class="seed">6.0</div>
+                            <div class="team-name">Team 54.0</div>
+                            <div class="odds">0.618</div>
+                        </div>
+                        <div class="team winner " style="border-left-color: #cc9900">
+                            <div class="seed">11.0</div>
+                            <div class="team-name">Team 59.0</div>
+                            <div class="odds">0.382</div>
+                        </div>
+                    </div>
+
+                    <div class="matchup">
+                        <div class="team winner " style="border-left-color: #cc3300">
+                            <div class="seed">3.0</div>
+                            <div class="team-name">Team 51.0</div>
+                            <div class="odds">0.855</div>
+                        </div>
+                        <div class="team loser " style="border-left-color: #666699">
+                            <div class="seed">14.0</div>
+                            <div class="team-name">Team 62.0</div>
+                            <div class="odds">0.145</div>
+                        </div>
+                    </div>
+
+                    <div class="matchup">
+                        <div class="team winner " style="border-left-color: #cc6600">
+                            <div class="seed">7.0</div>
+                            <div class="team-name">Team 55.0</div>
+                            <div class="odds">0.612</div>
+                        </div>
+                        <div class="team loser " style="border-left-color: #996633">
+                            <div class="seed">10.0</div>
+                            <div class="team-name">Team 58.0</div>
+                            <div class="odds">0.388</div>
+                        </div>
+                    </div>
+
+                    <div class="matchup">
+                        <div class="team winner " style="border-left-color: #009933">
+                            <div class="seed">2.0</div>
+                            <div class="team-name">Team 50.0</div>
+                            <div class="odds">0.928</div>
+                        </div>
+                        <div class="team loser " style="border-left-color: #999966">
+                            <div class="seed">15.0</div>
+                            <div class="team-name">Team 63.0</div>
+                            <div class="odds">0.072</div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="midwest-rounds">
+
+                <div class="round">
+                    <div class="round-title">Second Round</div>
+
+                    <div class="matchup">
+                        <div class="team winner champion-path" style="border-left-color: #0066cc">
+                            <div class="seed">1.0</div>
+                            <div class="team-name">Team 49.0</div>
+                            <div class="odds">0.941</div>
+                        </div>
+                        <div class="team loser " style="border-left-color: #ff6600">
+                            <div class="seed">9.0</div>
+                            <div class="team-name">Team 57.0</div>
+                            <div class="odds">0.059</div>
+                        </div>
+                    </div>
+
+                    <div class="matchup">
+                        <div class="team loser " style="border-left-color: #ff9900">
+                            <div class="seed">5.0</div>
+                            <div class="team-name">Team 53.0</div>
+                            <div class="odds">0.419</div>
+                        </div>
+                        <div class="team winner " style="border-left-color: #9900cc">
+                            <div class="seed">4.0</div>
+                            <div class="team-name">Team 52.0</div>
+                            <div class="odds">0.581</div>
+                        </div>
+                    </div>
+
+                    <div class="matchup">
+                        <div class="team loser " style="border-left-color: #cc9900">
+                            <div class="seed">11.0</div>
+                            <div class="team-name">Team 59.0</div>
+                            <div class="odds">0.245</div>
+                        </div>
+                        <div class="team winner " style="border-left-color: #cc3300">
+                            <div class="seed">3.0</div>
+                            <div class="team-name">Team 51.0</div>
+                            <div class="odds">0.755</div>
+                        </div>
+                    </div>
+
+                    <div class="matchup">
+                        <div class="team loser " style="border-left-color: #cc6600">
+                            <div class="seed">7.0</div>
+                            <div class="team-name">Team 55.0</div>
+                            <div class="odds">0.234</div>
+                        </div>
+                        <div class="team winner " style="border-left-color: #009933">
+                            <div class="seed">2.0</div>
+                            <div class="team-name">Team 50.0</div>
+                            <div class="odds">0.766</div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="round">
+                    <div class="round-title">Sweet 16</div>
+
+                    <div class="matchup">
+                        <div class="team winner champion-path" style="border-left-color: #0066cc">
+                            <div class="seed">1.0</div>
+                            <div class="team-name">Team 49.0</div>
+                            <div class="odds">0.815</div>
+                        </div>
+                        <div class="team loser " style="border-left-color: #9900cc">
+                            <div class="seed">4.0</div>
+                            <div class="team-name">Team 52.0</div>
+                            <div class="odds">0.185</div>
+                        </div>
+                    </div>
+
+                    <div class="matchup">
+                        <div class="team winner " style="border-left-color: #cc3300">
+                            <div class="seed">3.0</div>
+                            <div class="team-name">Team 51.0</div>
+                            <div class="odds">0.364</div>
+                        </div>
+                        <div class="team loser " style="border-left-color: #009933">
+                            <div class="seed">2.0</div>
+                            <div class="team-name">Team 50.0</div>
+                            <div class="odds">0.636</div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="round">
+                    <div class="round-title">Elite 8</div>
+
+                    <div class="matchup">
+                        <div class="team winner champion-path" style="border-left-color: #0066cc">
+                            <div class="seed">1.0</div>
+                            <div class="team-name">Team 49.0</div>
+                            <div class="odds">0.779</div>
+                        </div>
+                        <div class="team loser " style="border-left-color: #cc3300">
+                            <div class="seed">3.0</div>
+                            <div class="team-name">Team 51.0</div>
+                            <div class="odds">0.221</div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="final-four">
+                <div class="region-title">Final Four</div>
+                <div class="final-four-matchups">
+
+                    <div class="matchup">
+                        <div class="team loser " style="border-left-color: #0066cc">
+                            <div class="seed">1.0</div>
+                            <div class="team-name">Team 1.0 (East)</div>
+                            <div class="odds">0.740</div>
+                        </div>
+                        <div class="team winner " style="border-left-color: #009933">
+                            <div class="seed">2.0</div>
+                            <div class="team-name">Team 18.0 (West)</div>
+                            <div class="odds">0.260</div>
+                        </div>
+                    </div>
+
+                    <div class="matchup">
+                        <div class="team loser " style="border-left-color: #009933">
+                            <div class="seed">2.0</div>
+                            <div class="team-name">Team 34.0 (South)</div>
+                            <div class="odds">0.260</div>
+                        </div>
+                        <div class="team winner champion-path" style="border-left-color: #0066cc">
+                            <div class="seed">1.0</div>
+                            <div class="team-name">Team 49.0 (Midwest)</div>
+                            <div class="odds">0.740</div>
+                        </div>
+                    </div>
+
+                </div>
+                
+                <div class="region-title">Championship</div>
+                <div class="championship-matchup">
+
+                    <div class="matchup">
+                        <div class="team loser " style="border-left-color: #009933">
+                            <div class="seed">2.0</div>
+                            <div class="team-name">Team 18.0 (West)</div>
+                            <div class="odds">0.172</div>
+                        </div>
+                        <div class="team winner champion-path" style="border-left-color: #0066cc">
+                            <div class="seed">1.0</div>
+                            <div class="team-name">Team 49.0 (Midwest)</div>
+                            <div class="odds">0.828</div>
+                        </div>
+                    </div>
+
+                    <div class="champion-box" style="border-color: #0066cc">
+                        <div class="champion-title">Tournament Champion</div>
+                        <div class="champion-name">Seed 1.0 - Team 49.0 (Midwest)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
