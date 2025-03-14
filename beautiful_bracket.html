@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tournament Bracket</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-bracket/1.3.2/jquery.bracket.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-bracket/1.3.2/jquery.bracket.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background-color: #f4f4f4;
+    }
+
+    .bracket-container {
+      display: flex;
+      justify-content: center;
+      margin-top: 30px;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Awesome Tournament Bracket</h1>
+  <div class="bracket-container">
+    <div id="tournament"></div>
+  </div>
+  <script>
+    $(document).ready(function () {
+      var teams = [
+        ["Duke", "Kentucky"],
+        ["Gonzaga", "Kansas"],
+        ["UNC", "Villanova"],
+        ["Arizona", "UCLA"],
+        ["Purdue", "Baylor"],
+        ["Michigan", "Illinois"],
+        ["Tennessee", "Texas"],
+        ["Ohio State", "Iowa"]
+      ];
+
+      var data = {
+        teams: teams, // First round matchups
+        results: []  // No results yet
+      };
+
+      $('#tournament').bracket({
+        init: data,
+        save: function (updateData, userData) {
+          console.log("Bracket Updated", updateData);
+        },
+        teamWidth: 150,
+        matchMargin: 30,
+        roundMargin: 50,
+        skipConsolationRound: true,
+        disableToolbar: true
+      });
+    });
+  </script>
+</body>
+
+</html>
